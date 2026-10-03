@@ -17,13 +17,20 @@ class HealthService:
         db_alive = check_db_connection()
         db_status = "connected" if db_alive else "degraded"
 
-        # 2. Check ML subsystem readiness
-        # In Phase 1, model directory presence indicates readiness for model loading
-        models_dir_exists = os.path.exists(settings.MODEL_DIRECTORY)
-        ml_status = "ready" if models_dir_exists else "not_loaded"
+        # 2. Check ML subsystem readiness without executing predictions or retraining
+        from backend.app.services.prediction_service import PredictionService
+        if PredictionService.is_ready():
+            ml_status = "ready"
+        elif PredictionService.get_status() in ("unavailable", "degraded"):
+            ml_status = PredictionService.get_status()
+        else:
+            # Fallback check on model artifact directory
+            models_dir_exists = os.path.exists(settings.MODEL_DIRECTORY) or os.path.exists("machine_learning/models")
+            ml_status = "ready" if models_dir_exists else "not_loaded"
 
         # 3. Overall status calculation
-        overall_status = "healthy" if db_alive else "degraded"
+        is_healthy = db_alive and ml_status in ("ready", "not_loaded")
+        overall_status = "healthy" if is_healthy else "degraded"
 
         return HealthResponse(
             status=overall_status,

@@ -56,12 +56,13 @@ class Settings(BaseSettings):
     DB_MAX_OVERFLOW: int = 20
 
     # Machine Learning Settings
-    MODEL_DIRECTORY: str = "./machine-learning/models"
-    ANOMALY_MODEL_FILENAME: str = "isolation_forest_v1.joblib"
-    CLASSIFIER_MODEL_FILENAME: str = "threat_classifier_rf_v1.joblib"
-    FEATURE_SCALER_FILENAME: str = "feature_scaler_v1.joblib"
-    CONFIDENCE_THRESHOLD: float = 0.75
-    ANOMALY_CONTAMINATION: float = 0.03
+    MODEL_DIRECTORY: str = "machine_learning/models"
+    PREPROCESSOR_FILENAME: str = "preprocessor.joblib"
+    ANOMALY_MODEL_FILENAME: str = "anomaly_detector.joblib"
+    CLASSIFIER_MODEL_FILENAME: str = "threat_classifier.joblib"
+    METADATA_FILENAME: str = "model_metadata.json"
+    CONFIDENCE_THRESHOLD: float = 0.70
+    ANOMALY_CONTAMINATION: float = 0.05
 
     # Logging
     LOG_LEVEL: str = "INFO"

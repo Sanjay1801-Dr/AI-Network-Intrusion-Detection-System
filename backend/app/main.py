@@ -10,6 +10,7 @@ from backend.app.core.errors import register_exception_handlers
 from backend.app.db.session import engine, Base
 from backend.app.schemas.health import HealthResponse
 from backend.app.services.health_service import HealthService
+from backend.app.services.prediction_service import PredictionService
 from backend.app.api.v1.api import api_router
 
 # Configure logging format
@@ -33,6 +34,17 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         logger.info("Database tables initialized successfully.")
     except Exception as exc:
         logger.error("Database initialization failed: %s", exc)
+
+    # Initialize ML models on startup
+    try:
+        logger.info("Initializing Machine Learning inference engine...")
+        PredictionService.initialize()
+        if PredictionService.is_ready():
+            logger.info("ML inference engine initialized and ready.")
+        else:
+            logger.warning("ML inference engine initialized with status: %s", PredictionService.get_status())
+    except Exception as exc:
+        logger.error("Failed to initialize ML inference engine: %s", exc)
 
     yield
 

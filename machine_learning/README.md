@@ -222,12 +222,86 @@ print(result)
 python -m machine_learning.training.train_models
 ```
 
-### Run Phase 3 Test Suite
+### Run Phase 3 & 4 Test Suite
 ```powershell
-pytest tests/test_ml_models.py -v
+pytest backend/tests/test_prediction.py tests/test_ml_models.py -v
 ```
 
-### Run Entire Project Test Suite (Phases 1, 2, and 3)
+### Run Entire Project Test Suite (All 35 Tests)
 ```powershell
 pytest -v
 ```
+
+---
+
+## 9. FastAPI AI Inference Integration (Phase 4)
+
+### Architecture
+Phase 4 exposes the trained Phase 3 `NetworkPredictor` via a defensive, production-style REST API endpoint on FastAPI:
+```text
+Client
+  │
+  ▼
+FastAPI POST /api/v1/predict
+  │
+  ▼ (Pydantic Request Validation: reject NaN/Inf, empty body, code injection)
+PredictionService (Singleton Model Manager)
+  │
+  ▼ (Pre-loaded, frozen estimators; NO retraining per request)
+NetworkPredictor
+  ├─► Isolation Forest Anomaly Detection
+  └─► Random Forest Threat Classification
+  │
+  ▼
+Composite Risk Assessment (LOW | MEDIUM | HIGH | CRITICAL)
+  │
+  ▼
+Structured JSON Response
+```
+
+> **IMPORTANT ARCHITECTURAL GUARANTEE:**
+> The API exposes the Phase 3 AI inference engine. **It does NOT train models during prediction requests.** Models are deserialized once into memory during application lifespan startup and reused across requests.
+
+### Endpoint Details
+- **Route:** `POST /api/v1/predict`
+- **Headers:** `Content-Type: application/json`
+- **Status Codes:**
+  - `200 OK`: Successful dual-engine prediction and risk triage.
+  - `422 Unprocessable Content`: Validation error (NaN, Infinity, empty payload, non-numeric values).
+  - `503 Service Unavailable`: ML models missing or degraded (controlled JSON response, no stack traces).
+  - `500 Internal Server Error`: Unexpected internal inference failure (stack traces suppressed).
+
+### Example Python Request
+```python
+import requests
+
+url = "http://127.0.0.1:8000/api/v1/predict"
+payload = {
+    "Destination Port": 443,
+    "Flow Duration": 245012,
+    "Total Fwd Packets": 14,
+    "Total Backward Packets": 18,
+    "Total Length of Fwd Packets": 1240,
+    "Total Length of Bwd Packets": 18450,
+    "Flow Bytes/s": 80363.41,
+    "Flow Packets/s": 130.60,
+    "Protocol": 6
+}
+
+response = requests.post(url, json=payload)
+print(response.status_code, response.json())
+```
+
+### Example Curl Request
+```bash
+curl -X POST "http://127.0.0.1:8000/api/v1/predict" \
+     -H "Content-Type: application/json" \
+     -d '{"Destination Port": 80, "Flow Duration": 184500, "Total Fwd Packets": 8, "Total Backward Packets": 10}'
+```
+
+### CORS Configuration
+Configured in `backend/app/core/config.py` with explicit allowed origins:
+- `http://localhost:5173` (Vite local dev)
+- `http://127.0.0.1:5173` (Vite loopback)
+Wildcard CORS with credentials is intentionally disabled.
+

@@ -22,7 +22,8 @@
 
 | Method | Endpoint | Status | Description |
 | :--- | :--- | :--- | :--- |
-| `GET` | `/api/health` | **Implemented (Phase 1)** | System health, service status, uptime & version |
+| `GET` | `/api/health` | **Implemented (Phase 1/4)** | System health, service status, uptime & ML readiness |
+| `POST`| `/api/v1/predict` | **Implemented (Phase 4)** | Predict flow anomaly, classify threat family & compute risk triage |
 | `POST` | `/api/v1/traffic/ingest` | Documented (Phase 2) | Ingest single or batch network traffic flow records |
 | `GET` | `/api/v1/traffic` | Documented (Phase 2) | Query traffic records with filtering & pagination |
 | `GET` | `/api/v1/traffic/{id}` | Documented (Phase 2) | Retrieve a single traffic record by ID |
@@ -61,7 +62,63 @@
 
 ---
 
-### 3.2 Network Traffic Ingestion (Phase 2)
+### 3.2 AI Threat Prediction (Implemented in Phase 4)
+- **Endpoint:** `POST /api/v1/predict`
+- **Auth:** None (Phase 4)
+- **Description:** Submits network flow telemetry for real-time dual-stage inference: Isolation Forest outlier detection, Random Forest multiclass classification, and SOC risk rating.
+- **Request Body (JSON):**
+  ```json
+  {
+    "Destination Port": 443,
+    "Flow Duration": 245012,
+    "Total Fwd Packets": 14,
+    "Total Backward Packets": 18,
+    "Total Length of Fwd Packets": 1240,
+    "Total Length of Bwd Packets": 18450,
+    "Flow Bytes/s": 80363.41,
+    "Flow Packets/s": 130.60,
+    "Protocol": 6
+  }
+  ```
+- **Response (200 OK):**
+  ```json
+  {
+    "anomaly": {
+      "is_anomaly": false,
+      "anomaly_label": "NORMAL",
+      "anomaly_score": 0.284,
+      "raw_decision_score": 0.108,
+      "interpretation": "Outlier divergence score: 0.284 (0.0=nominal, 1.0=severe outlier)."
+    },
+    "classification": {
+      "predicted_label": "BENIGN",
+      "is_intrusion": false,
+      "confidence": 0.40,
+      "confidence_type": "estimated_class_probability",
+      "class_probabilities": {
+        "BENIGN": 0.40,
+        "Bot": 0.25,
+        "DoS": 0.08,
+        "Infiltration": 0.12,
+        "Port Scan": 0.01,
+        "Web Attack": 0.14
+      }
+    },
+    "risk_assessment": {
+      "risk_level": "LOW",
+      "recommended_action": "Standard Flow Logging",
+      "summary": "Flow evaluated: Anomaly=NORMAL (score 0.28), Classification='BENIGN' (est. prob 40.0%). Assigned Risk Level: LOW."
+    }
+  }
+  ```
+- **Error Responses:**
+  - `422 Unprocessable Content`: Empty payload, NaN/Infinity, non-numeric values.
+  - `503 Service Unavailable`: Model artifacts missing or failed to initialize.
+  - `500 Internal Server Error`: Unexpected internal computation failure (stack traces suppressed).
+
+---
+
+### 3.3 Network Traffic Ingestion (Phase 2)
 - **Endpoint:** `POST /api/v1/traffic/ingest`
 - **Request Body (Batch):**
   ```json

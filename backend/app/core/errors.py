@@ -79,6 +79,24 @@ def create_error_response(
     )
 
 
+def sanitize_error_detail(obj: Any) -> Any:
+    """Recursively clean error structures to ensure standard JSON compliance (no NaN/inf, no raw Exception instances)."""
+    import math
+    if isinstance(obj, list):
+        return [sanitize_error_detail(item) for item in obj]
+    elif isinstance(obj, dict):
+        return {str(k): sanitize_error_detail(v) for k, v in obj.items()}
+    elif isinstance(obj, float):
+        if math.isnan(obj):
+            return "NaN"
+        if math.isinf(obj):
+            return "Infinity" if obj > 0 else "-Infinity"
+        return obj
+    elif isinstance(obj, Exception):
+        return str(obj)
+    return obj
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     """Register custom exception handlers on the FastAPI application."""
 
@@ -88,7 +106,7 @@ def register_exception_handlers(app: FastAPI) -> None:
             status_code=exc.status_code,
             error_code=exc.error_code,
             message=exc.message,
-            details=exc.details,
+            details=sanitize_error_detail(exc.details),
         )
 
     @app.exception_handler(StarletteHTTPException)
@@ -101,17 +119,21 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(_: Request, exc: RequestValidationError) -> JSONResponse:
+        from fastapi.encoders import jsonable_encoder
+        clean_errors = sanitize_error_detail(jsonable_encoder(exc.errors()))
         return create_error_response(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             error_code="UNPROCESSABLE_ENTITY",
             message="Request parameter validation failed.",
-            details=exc.errors(),
+            details=clean_errors,
         )
 
     @app.exception_handler(Exception)
     async def unhandled_exception_handler(_: Request, exc: Exception) -> JSONResponse:
+        import logging
+        logging.getLogger("nids.api.errors").error("Unhandled exception: %s", exc, exc_info=True)
         return create_error_response(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             error_code="UNHANDLED_EXCEPTION",
-            message=f"An unexpected internal error occurred: {str(exc)}",
+            message="An unexpected internal error occurred while processing the request.",
         )

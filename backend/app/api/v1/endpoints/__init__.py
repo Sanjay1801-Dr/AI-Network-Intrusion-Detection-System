@@ -6,6 +6,7 @@ from backend.app.api.v1.endpoints.threats import router as threats_router
 from backend.app.api.v1.endpoints.alerts import router as alerts_router
 from backend.app.api.v1.endpoints.metrics import router as metrics_router
 from backend.app.api.v1.endpoints.models import router as models_router
+from backend.app.api.v1.endpoints.prediction import router as prediction_router
 
 __all__ = [
     "health_router",
@@ -14,4 +15,5 @@ __all__ = [
     "alerts_router",
     "metrics_router",
     "models_router",
+    "prediction_router",
 ]
