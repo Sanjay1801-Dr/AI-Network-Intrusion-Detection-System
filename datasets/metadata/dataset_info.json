@@ -1,0 +1,122 @@
+{
+  "dataset_name": "sample_network_traffic.csv",
+  "source": "C:\\Users\\SANJAY SK\\Desktop\\Network_based\\datasets\\samples\\sample_network_traffic.csv",
+  "is_sample_dataset": true,
+  "preprocessing_timestamp": "2026-10-03T12:27:55.865517+00:00",
+  "preprocessing_version": "1.0.0-phase2",
+  "original_row_count": 28,
+  "processed_row_count": 27,
+  "original_column_count": 36,
+  "processed_feature_count": 42,
+  "duplicates_removed": 1,
+  "infinite_values_imputed": 1,
+  "removed_columns": {
+    "fwd_psh_flags": "Constant column (zero variance, provides no discriminative signal).",
+    "bwd_psh_flags": "Constant column (zero variance, provides no discriminative signal).",
+    "urg_flag_count": "Constant column (zero variance, provides no discriminative signal)."
+  },
+  "engineered_features": [
+    "total_packets",
+    "total_bytes",
+    "calc_flow_packets_per_s",
+    "calc_flow_bytes_per_s",
+    "fwd_bwd_packet_ratio",
+    "fwd_bwd_byte_ratio",
+    "syn_ratio",
+    "rst_ratio",
+    "port_category"
+  ],
+  "fitted_numerical_features": [
+    "destination_port",
+    "flow_duration",
+    "total_fwd_packets",
+    "total_backward_packets",
+    "total_length_of_fwd_packets",
+    "total_length_of_bwd_packets",
+    "fwd_packet_length_max",
+    "fwd_packet_length_min",
+    "fwd_packet_length_mean",
+    "bwd_packet_length_mean",
+    "flow_bytes_per_s",
+    "flow_packets_per_s",
+    "flow_iat_mean",
+    "flow_iat_std",
+    "flow_iat_max",
+    "flow_iat_min",
+    "fwd_header_length",
+    "bwd_header_length",
+    "fwd_packets_per_s",
+    "bwd_packets_per_s",
+    "min_packet_length",
+    "max_packet_length",
+    "packet_length_mean",
+    "packet_length_std",
+    "fin_flag_count",
+    "syn_flag_count",
+    "rst_flag_count",
+    "psh_flag_count",
+    "ack_flag_count",
+    "down_per_up_ratio",
+    "average_packet_size",
+    "protocol",
+    "total_packets",
+    "total_bytes",
+    "calc_flow_packets_per_s",
+    "calc_flow_bytes_per_s",
+    "fwd_bwd_packet_ratio",
+    "fwd_bwd_byte_ratio",
+    "syn_ratio",
+    "rst_ratio"
+  ],
+  "fitted_categorical_features": [
+    "port_category"
+  ],
+  "label_distribution": {
+    "BENIGN": {
+      "count": 11,
+      "percentage": 39.29
+    },
+    "PortScan": {
+      "count": 5,
+      "percentage": 17.86
+    },
+    "DoS Hulk": {
+      "count": 3,
+      "percentage": 10.71
+    },
+    "DoS GoldenEye": {
+      "count": 2,
+      "percentage": 7.14
+    },
+    "SSH-Patator": {
+      "count": 2,
+      "percentage": 7.14
+    },
+    "FTP-Patator": {
+      "count": 1,
+      "percentage": 3.57
+    },
+    "Web Attack \u2013 XSS": {
+      "count": 1,
+      "percentage": 3.57
+    },
+    "Web Attack \u2013 Sql Injection": {
+      "count": 1,
+      "percentage": 3.57
+    },
+    "Infiltration": {
+      "count": 1,
+      "percentage": 3.57
+    },
+    "Bot": {
+      "count": 1,
+      "percentage": 3.57
+    }
+  },
+  "leakage_prevention": {
+    "target_excluded_from_features": true,
+    "fitted_on_features_only": true,
+    "encoders_and_scalers_frozen": true,
+    "serializable_via_joblib": true
+  }
+}

@@ -1,0 +1,120 @@
+{
+  "model_version": "1.0.0-phase3",
+  "training_timestamp": "2026-10-03T12:40:35.346681+00:00",
+  "training_dataset": {
+    "name": "sample_network_traffic.csv",
+    "source": "C:\\Users\\SANJAY SK\\Desktop\\Network_based\\datasets\\samples\\sample_network_traffic.csv",
+    "is_sample_dataset": true,
+    "disclaimer": "DEVELOPMENT SAMPLE RESULTS ONLY. Not indicative of real-world detection capability."
+  },
+  "dataset_split": {
+    "train_samples": 18,
+    "test_samples": 9,
+    "test_size_fraction": 0.3,
+    "random_state": 42,
+    "stratified": false
+  },
+  "feature_engineering": {
+    "total_features": 42,
+    "feature_names": [
+      "num__destination_port",
+      "num__flow_duration",
+      "num__total_fwd_packets",
+      "num__total_backward_packets",
+      "num__total_length_of_fwd_packets",
+      "num__total_length_of_bwd_packets",
+      "num__fwd_packet_length_max",
+      "num__fwd_packet_length_min",
+      "num__fwd_packet_length_mean",
+      "num__bwd_packet_length_mean",
+      "num__flow_bytes_per_s",
+      "num__flow_packets_per_s",
+      "num__flow_iat_mean",
+      "num__flow_iat_std",
+      "num__flow_iat_max",
+      "num__flow_iat_min",
+      "num__fwd_header_length",
+      "num__bwd_header_length",
+      "num__fwd_packets_per_s",
+      "num__bwd_packets_per_s",
+      "num__min_packet_length",
+      "num__max_packet_length",
+      "num__packet_length_mean",
+      "num__packet_length_std",
+      "num__fin_flag_count",
+      "num__syn_flag_count",
+      "num__rst_flag_count",
+      "num__psh_flag_count",
+      "num__ack_flag_count",
+      "num__down_per_up_ratio",
+      "num__average_packet_size",
+      "num__protocol",
+      "num__total_packets",
+      "num__total_bytes",
+      "num__calc_flow_packets_per_s",
+      "num__calc_flow_bytes_per_s",
+      "num__fwd_bwd_packet_ratio",
+      "num__fwd_bwd_byte_ratio",
+      "num__syn_ratio",
+      "num__rst_ratio",
+      "cat__port_category_registered",
+      "cat__port_category_well_known"
+    ],
+    "top_10_features": [
+      "num__calc_flow_bytes_per_s",
+      "num__fwd_packet_length_mean",
+      "num__flow_iat_std",
+      "num__calc_flow_packets_per_s",
+      "num__total_fwd_packets",
+      "num__flow_iat_max",
+      "num__fwd_bwd_packet_ratio",
+      "num__fwd_packets_per_s",
+      "num__total_length_of_fwd_packets",
+      "num__flow_iat_mean"
+    ]
+  },
+  "anomaly_detector": {
+    "hyperparameters": {
+      "model_type": "IsolationForest",
+      "algorithm": "Unsupervised Outlier Isolation",
+      "n_estimators": 150,
+      "contamination": 0.05,
+      "max_samples": "auto",
+      "random_state": 42
+    },
+    "evaluation": {
+      "flagged_anomalies": 0,
+      "anomaly_rate": 0.0
+    }
+  },
+  "threat_classifier": {
+    "hyperparameters": {
+      "model_type": "RandomForestClassifier",
+      "algorithm": "Supervised Multi-Class Ensembling",
+      "n_estimators": 100,
+      "max_depth": 16,
+      "min_samples_split": 2,
+      "min_samples_leaf": 1,
+      "class_weight": "balanced",
+      "random_state": 42
+    },
+    "classes": [
+      "BENIGN",
+      "Bot",
+      "DoS",
+      "Infiltration",
+      "Port Scan",
+      "Web Attack"
+    ],
+    "evaluation": {
+      "test_accuracy": 0.6667,
+      "f1_macro": 0.2879,
+      "f1_weighted": 0.8182
+    }
+  },
+  "anti_leakage_guarantees": {
+    "preprocessor_fitted_on_train_only": true,
+    "target_excluded_from_features": true,
+    "frozen_serializable_estimators": true
+  }
+}

@@ -1,0 +1,7 @@
+,BENIGN,Bot,DoS,Infiltration,Port Scan,Web Attack
+BENIGN,4,0,0,0,0,0
+Bot,0,0,0,0,0,0
+DoS,0,0,0,0,0,0
+Infiltration,0,0,0,0,0,0
+Port Scan,0,0,0,0,2,0
+Web Attack,0,0,0,0,0,0
