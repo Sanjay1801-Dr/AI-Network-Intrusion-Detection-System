@@ -42,21 +42,8 @@ class SystemNode(Base):
     last_seen = Column(DateTime(timezone=True), default=utc_now)
 
 
-class User(Base):
-    """SOC Analyst or Administrator user account."""
-
-    __tablename__ = "users"
-
-    id = Column(String(36), primary_key=True, default=generate_uuid)
-    username = Column(String(50), nullable=False, unique=True, index=True)
-    email = Column(String(120), nullable=False, unique=True)
-    hashed_password = Column(String(255), nullable=False)
-    role = Column(String(30), default="analyst")  # 'analyst', 'admin', 'auditor'
-    is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime(timezone=True), default=utc_now)
-
-    # Relationships
-    assigned_alerts = relationship("SecurityAlert", back_populates="assigned_user")
+# Import UserRecord as User alias for backwards compatibility
+from backend.app.models.user import UserRecord as User
 
 
 class TrafficRecord(Base):
@@ -125,7 +112,6 @@ class SecurityAlert(Base):
     description = Column(Text, nullable=False)
     severity = Column(String(20), nullable=False, index=True)  # LOW, MEDIUM, HIGH, CRITICAL
     status = Column(String(30), default="NEW", index=True, nullable=False)  # NEW, ACKNOWLEDGED, RESOLVED, FALSE_POSITIVE
-    assigned_user_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime(timezone=True), default=utc_now, index=True, nullable=False)
     resolved_at = Column(DateTime(timezone=True), nullable=True)
 
@@ -136,7 +122,6 @@ class SecurityAlert(Base):
 
     # Relationships
     threat_event = relationship("ThreatEvent", back_populates="security_alerts")
-    assigned_user = relationship("User", back_populates="assigned_alerts")
 
 
 class MLPrediction(Base):

@@ -1,0 +1,73 @@
+# ==============================================================================
+# AI-Based Network Intrusion Detection System (NIDS) - Docker Compose Stack
+# Phase 10: Production Configuration & Deployment Readiness
+# ==============================================================================
+
+version: '3.8'
+
+services:
+  # 1. PostgreSQL Relational Database Service
+  db:
+    image: postgres:16-alpine
+    container_name: nids-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-nids_db}
+      POSTGRES_USER: ${POSTGRES_USER:-ids_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me_in_production}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ids_user} -d ${POSTGRES_DB:-nids_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # 2. FastAPI ML Inference & REST Gateway Service
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nids-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - NIDS_ENVIRONMENT=${NIDS_ENVIRONMENT:-development}
+      - NIDS_DATABASE_URL=postgresql+psycopg2://${POSTGRES_USER:-ids_user}:${POSTGRES_PASSWORD:-change_me_in_production}@db:5432/${POSTGRES_DB:-nids_db}
+      - NIDS_JWT_SECRET=${NIDS_JWT_SECRET:-ids-secure-secret-key-phase1-dev-only-min-32-chars-long}
+      - NIDS_JWT_ALGORITHM=${NIDS_JWT_ALGORITHM:-HS256}
+      - NIDS_JWT_EXPIRE_MINUTES=${NIDS_JWT_EXPIRE_MINUTES:-480}
+      - NIDS_CORS_ORIGINS=${NIDS_CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000}
+      - NIDS_HOST=0.0.0.0
+      - NIDS_PORT=8000
+      - NIDS_LOG_LEVEL=${NIDS_LOG_LEVEL:-INFO}
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # 3. React + Vite Security Operations Dashboard
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: nids-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000
+    ports:
+      - "5173:5173"
+
+volumes:
+  postgres_data:
+    driver: local

@@ -36,6 +36,42 @@ class ResourceNotFoundException(AppException):
         )
 
 
+class ConflictException(AppException):
+    """Raised when an entity state transition conflicts with business rules (HTTP 409)."""
+
+    def __init__(self, message: str, details: Optional[Any] = None) -> None:
+        super().__init__(
+            message=message,
+            error_code="STATE_CONFLICT",
+            status_code=status.HTTP_409_CONFLICT,
+            details=details,
+        )
+
+
+class UnauthorizedException(AppException):
+    """Raised when authentication credentials are missing, invalid, or expired (HTTP 401)."""
+
+    def __init__(self, message: str = "Invalid authentication credentials.", details: Optional[Any] = None) -> None:
+        super().__init__(
+            message=message,
+            error_code="UNAUTHORIZED",
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            details=details,
+        )
+
+
+class ForbiddenException(AppException):
+    """Raised when an authenticated user lacks required role/permissions for an action (HTTP 403)."""
+
+    def __init__(self, message: str = "Insufficient permissions to perform this operation.", details: Optional[Any] = None) -> None:
+        super().__init__(
+            message=message,
+            error_code="FORBIDDEN",
+            status_code=status.HTTP_403_FORBIDDEN,
+            details=details,
+        )
+
+
 class ValidationException(AppException):
     """Raised when data validation fails before ingestion."""
 

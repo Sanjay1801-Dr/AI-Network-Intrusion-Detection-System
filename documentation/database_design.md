@@ -175,3 +175,73 @@ Security personnel accounts for accessing SOC dashboard and managing alerts.
 1. **Compound Indexes:** `(source_ip, destination_port)` on `traffic_records` for fast port scan queries.
 2. **Time-series Indexes:** `(captured_at DESC)` and `(detected_at DESC)` for efficient pagination on dashboard feeds.
 3. **Partitioning (PostgreSQL):** Range-partitioning on `traffic_records` by monthly `captured_at` for high-volume retention.
+
+---
+
+## 5. Phase 5 AI Prediction Persistence & Security Alerts
+
+> **DEFENSIVE PURPOSE STATEMENT:**
+> Phase 5 persists AI inference results and security alerts for defensive monitoring and audit purposes.
+
+### Architecture Overview
+When flow telemetry is evaluated by `POST /api/v1/predict`, the AI results are atomically recorded in `prediction_records` and optionally escalate to `alerts`:
+
+```text
+POST /api/v1/predict
+         │
+         ▼
+  NetworkPredictor (Dual-Engine Inference)
+         │
+         ▼
+  PersistenceService (Atomic Database Transaction)
+         ├──► PredictionRecord (Audits all flow predictions)
+         └──► AlertRecord (Escalates MEDIUM, HIGH, and CRITICAL risks)
+```
+
+### Table: `prediction_records`
+Audit trail of real-time network flow evaluations:
+- `id` (Integer, Primary Key, Autoincrement): Unique prediction record ID.
+- `timestamp` (DateTime, Indexed): Flow evaluation timestamp.
+- `source_ip` / `destination_ip` (String(45), Nullable, Indexed): Client-supplied IP telemetry.
+- `source_port` / `destination_port` (Integer, Nullable, Indexed): Service ports.
+- `protocol` (String(20), Nullable): Transport protocol.
+- `flow_duration` (Float, Nullable): Flow duration in microseconds.
+- `total_forward_packets` / `total_backward_packets` (BigInteger, Nullable): Packet volume.
+- `total_bytes` (BigInteger, Nullable): Total flow byte volume.
+- `anomaly_label` (String(30)): NORMAL or ANOMALOUS.
+- `anomaly_score` (Float): Normalized outlier divergence score [0.0, 1.0].
+- `raw_decision_score` (Float): Isolation Forest decision score.
+- `predicted_threat` (String(50), Indexed): Predicted attack category (BENIGN, DoS, Port Scan, etc.).
+- `intrusion_flag` (Boolean): Boolean flag indicating non-BENIGN classification.
+- `classification_confidence` (Float): Supervised Random Forest estimated class probability.
+- `risk_level` (String(20), Indexed): LOW, MEDIUM, HIGH, CRITICAL.
+- `recommended_action` (String(255)): SOC triage instruction.
+- `model_version` (String(50)): Model version (e.g. `1.0.0-phase3`).
+- `raw_flow_data` (Text, Nullable): Compact sanitized JSON representation of input flow.
+- `created_at` (DateTime, Indexed): Database insertion timestamp.
+
+### Table: `alerts`
+Security incident notifications queued for SOC analyst investigation:
+- `id` (Integer, Primary Key, Autoincrement): Alert ID.
+- `prediction_id` (Integer, Foreign Key -> `prediction_records.id`, Indexed): Associated prediction.
+- `timestamp` (DateTime, Indexed): Incident occurrence timestamp.
+- `alert_type` (String(50)): `NETWORK_INTRUSION`, `CRITICAL_INTRUSION`, `ANOMALY_MONITORING`.
+- `severity` (String(20), Indexed): `MEDIUM`, `HIGH`, `CRITICAL`.
+- `threat_label` (String(50), Indexed): Attack family (e.g., DoS, Port Scan, Bot).
+- `anomaly_score` (Float): Anomaly divergence score.
+- `confidence` (Float): Classifier confidence.
+- `source_ip` / `destination_ip` (String(45), Nullable): Telemetry IP endpoints.
+- `status` (String(30), Indexed): `NEW`, `ACKNOWLEDGED`, `RESOLVED`, `FALSE_POSITIVE`.
+- `recommended_action` (String(255)): SOC triage instruction.
+- `created_at` (DateTime, Indexed): Alert creation timestamp.
+
+### Alert Escalation Rules
+- **`CRITICAL` Risk:** Generates `AlertRecord` with `severity="CRITICAL"`, `alert_type="CRITICAL_INTRUSION"`.
+- **`HIGH` Risk:** Generates `AlertRecord` with `severity="HIGH"`, `alert_type="NETWORK_INTRUSION"`.
+- **`MEDIUM` Risk:** Generates `AlertRecord` with `severity="MEDIUM"`, `alert_type="ANOMALY_MONITORING"` (lower-priority behavioral deviation).
+- **`LOW` Risk:** Stores prediction in `prediction_records` for audit/drift baseline; **no alert is created**.
+
+### Transaction & Rollback Safety
+- Single database transaction spans both `prediction_records` and `alerts`.
+- Any database failure triggers an immediate `db.rollback()` and raises an `AppException(status_code=500)` without leaking SQL statements, table structures, or credentials.
+

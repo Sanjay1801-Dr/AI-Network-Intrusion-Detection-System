@@ -1,12 +1,17 @@
 import React from 'react';
-import { Shield, AlertTriangle, Activity, Cpu, Radio, Database } from 'lucide-react';
+import { Shield, AlertTriangle, Activity, Cpu, Database, History, FileText, BarChart3, ShieldAlert, FileDown, Crosshair } from 'lucide-react';
 
 export default function Sidebar({ activeTab, setActiveTab }) {
   const menuItems = [
-    { id: 'dashboard', label: 'Dashboard Overview', icon: Activity },
-    { id: 'alerts', label: 'Security Alerts', icon: AlertTriangle, badge: 'Phase 3' },
-    { id: 'events', label: 'Network Events', icon: Radio, badge: 'Phase 2' },
-    { id: 'models', label: 'Model Diagnostics', icon: Cpu, badge: 'Phase 4' },
+    { id: 'dashboard', label: 'Dashboard', subtitle: 'SOC Overview', icon: Activity },
+    { id: 'hunting', label: 'Threat Hunting', subtitle: 'Search & Correlation', icon: Crosshair },
+    { id: 'analytics', label: 'Security Analytics', subtitle: 'Threat Intel & KPIs', icon: BarChart3 },
+    { id: 'incidents', label: 'Incident Response', subtitle: 'SOC Cases & Triage', icon: ShieldAlert },
+    { id: 'reports', label: 'Security Reports', subtitle: 'Executive & Evidence', icon: FileDown },
+    { id: 'predict', label: 'AI Prediction', subtitle: 'Flow Inference', icon: Cpu },
+    { id: 'history', label: 'Prediction History', subtitle: 'Inference Records', icon: History },
+    { id: 'alerts', label: 'Security Alerts', subtitle: 'Triage Queue', icon: AlertTriangle },
+    { id: 'audit', label: 'Security Audit Logs', subtitle: 'Compliance Trail', icon: FileText },
   ];
 
   return (
@@ -56,9 +61,9 @@ export default function Sidebar({ activeTab, setActiveTab }) {
       {/* Navigation Links */}
       <nav style={{ padding: '1.25rem 0.85rem', flex: 1 }}>
         <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '0 0.65rem 0.65rem', fontWeight: 600 }}>
-          SOC Monitoring
+          Navigation
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -69,11 +74,11 @@ export default function Sidebar({ activeTab, setActiveTab }) {
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'space-between',
+                  gap: '0.85rem',
                   width: '100%',
                   padding: '0.75rem 0.85rem',
                   borderRadius: 'var(--radius-sm)',
-                  backgroundColor: isActive ? 'rgba(0, 242, 254, 0.1)' : 'transparent',
+                  backgroundColor: isActive ? 'rgba(0, 242, 254, 0.12)' : 'transparent',
                   color: isActive ? 'var(--accent-cyan)' : 'var(--text-secondary)',
                   border: isActive ? '1px solid var(--border-active)' : '1px solid transparent',
                   cursor: 'pointer',
@@ -81,25 +86,15 @@ export default function Sidebar({ activeTab, setActiveTab }) {
                   transition: 'all 0.15s ease-in-out',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <Icon size={18} />
-                  <span style={{ fontSize: '0.88rem', fontWeight: isActive ? 600 : 500 }}>
+                <Icon size={18} color={isActive ? 'var(--accent-cyan)' : 'var(--text-secondary)'} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '0.88rem', fontWeight: isActive ? 600 : 500, color: isActive ? '#fff' : 'inherit' }}>
                     {item.label}
-                  </span>
+                  </div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                    {item.subtitle}
+                  </div>
                 </div>
-                {item.badge && (
-                  <span
-                    style={{
-                      fontSize: '0.65rem',
-                      padding: '0.15rem 0.4rem',
-                      borderRadius: '3px',
-                      backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                      color: 'var(--text-muted)',
-                    }}
-                  >
-                    {item.badge}
-                  </span>
-                )}
               </button>
             );
           })}
@@ -120,7 +115,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
           <Database size={14} color="var(--accent-cyan)" />
           <span style={{ color: 'var(--text-secondary)' }}>SQLite (Local Dev)</span>
         </div>
-        <div>Final-Year Project &bull; Phase 1</div>
+        <div>AI-NIDS &bull; Phase 16 Threat Hunting</div>
       </div>
     </aside>
   );

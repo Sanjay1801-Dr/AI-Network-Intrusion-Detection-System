@@ -195,3 +195,7 @@ class PredictionResponse(BaseModel):
     anomaly: AnomalyResult = Field(..., description="Unsupervised flow anomaly detection evaluation")
     classification: ClassificationResult = Field(..., description="Supervised multi-class attack pattern classification")
     risk_assessment: RiskAssessment = Field(..., description="Dual-engine composite security risk evaluation and triage recommendation")
+    explanation: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Rule-based prediction explanation derived from ML model evaluations and flow parameters",
+    )

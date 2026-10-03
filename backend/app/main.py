@@ -8,16 +8,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from backend.app.core.config import settings
 from backend.app.core.errors import register_exception_handlers
 from backend.app.db.session import engine, Base
+import backend.app.models  # Ensure all model tables are registered with Base.metadata
 from backend.app.schemas.health import HealthResponse
 from backend.app.services.health_service import HealthService
 from backend.app.services.prediction_service import PredictionService
 from backend.app.api.v1.api import api_router
+from backend.app.core.logging import setup_logging, RequestAuditMiddleware
+from backend.app.core.limiter import limiter, rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
-# Configure logging format
-logging.basicConfig(
-    level=settings.LOG_LEVEL,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-)
+# Initialize centralized structured logging
+setup_logging(settings.LOG_LEVEL)
 logger = logging.getLogger("nids.api")
 
 
@@ -31,6 +32,15 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     try:
         logger.info("Initializing database schema on %s...", settings.DATABASE_URL.split("///")[-1])
         Base.metadata.create_all(bind=engine)
+        # Idempotently ensure Phase 8 lifecycle timestamp columns exist (for SQLite dev)
+        with engine.connect() as conn:
+            if "sqlite" in settings.DATABASE_URL:
+                cols = [row[1] for row in conn.exec_driver_sql("PRAGMA table_info(alerts)").fetchall()]
+                if cols and "acknowledged_at" not in cols:
+                    conn.exec_driver_sql("ALTER TABLE alerts ADD COLUMN acknowledged_at TIMESTAMP")
+                if cols and "resolved_at" not in cols:
+                    conn.exec_driver_sql("ALTER TABLE alerts ADD COLUMN resolved_at TIMESTAMP")
+                conn.commit()
         logger.info("Database tables initialized successfully.")
     except Exception as exc:
         logger.error("Database initialization failed: %s", exc)
@@ -76,6 +86,13 @@ def create_application() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    # Operational audit logging & security headers middleware
+    application.add_middleware(RequestAuditMiddleware)
+
+    # Attach API rate limiter state and exception handler (Phase 11)
+    application.state.limiter = limiter
+    application.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
     # Register centralized exception handlers
     register_exception_handlers(application)

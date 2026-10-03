@@ -97,3 +97,83 @@ CREATE TABLE IF NOT EXISTS ml_predictions (
 );
 
 CREATE INDEX IF NOT EXISTS idx_ml_executed_at ON ml_predictions(executed_at);
+
+-- 7. Phase 5 Prediction Records (Flow Telemetry & AI Audit Log)
+CREATE TABLE IF NOT EXISTS prediction_records (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    source_ip VARCHAR(45),
+    destination_ip VARCHAR(45),
+    source_port INT,
+    destination_port INT,
+    protocol VARCHAR(20),
+    flow_duration REAL,
+    total_forward_packets BIGINT,
+    total_backward_packets BIGINT,
+    total_bytes BIGINT,
+    anomaly_label VARCHAR(30) NOT NULL,
+    anomaly_score REAL NOT NULL,
+    raw_decision_score REAL NOT NULL,
+    predicted_threat VARCHAR(50) NOT NULL,
+    intrusion_flag BOOLEAN NOT NULL,
+    classification_confidence REAL NOT NULL,
+    risk_level VARCHAR(20) NOT NULL,
+    recommended_action VARCHAR(255) NOT NULL,
+    model_version VARCHAR(50) DEFAULT '1.0.0-phase3',
+    raw_flow_data TEXT,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_pred_created_at ON prediction_records(created_at);
+CREATE INDEX IF NOT EXISTS idx_pred_timestamp ON prediction_records(timestamp);
+CREATE INDEX IF NOT EXISTS idx_pred_risk_level ON prediction_records(risk_level);
+CREATE INDEX IF NOT EXISTS idx_pred_threat ON prediction_records(predicted_threat);
+CREATE INDEX IF NOT EXISTS idx_pred_dst_port ON prediction_records(destination_port);
+
+-- 8. Phase 5 Security Incident Alerts
+CREATE TABLE IF NOT EXISTS alerts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    prediction_id INTEGER REFERENCES prediction_records(id) ON DELETE CASCADE,
+    timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    alert_type VARCHAR(50) NOT NULL DEFAULT 'NETWORK_INTRUSION',
+    severity VARCHAR(20) NOT NULL,
+    threat_label VARCHAR(50) NOT NULL,
+    anomaly_score REAL NOT NULL,
+    confidence REAL NOT NULL,
+    source_ip VARCHAR(45),
+    destination_ip VARCHAR(45),
+    status VARCHAR(30) NOT NULL DEFAULT 'NEW',
+    recommended_action VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_alert_created_at ON alerts(created_at);
+CREATE INDEX IF NOT EXISTS idx_alert_severity ON alerts(severity);
+CREATE INDEX IF NOT EXISTS idx_alert_status ON alerts(status);
+CREATE INDEX IF NOT EXISTS idx_alert_threat_label ON alerts(threat_label);
+CREATE INDEX IF NOT EXISTS idx_alert_prediction_id ON alerts(prediction_id);
+
+-- 9. Phase 12 Security Audit Logs
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    username VARCHAR(50),
+    user_role VARCHAR(20),
+    action VARCHAR(50) NOT NULL,
+    resource_type VARCHAR(50) NOT NULL,
+    resource_id VARCHAR(50),
+    outcome VARCHAR(20) NOT NULL,
+    ip_address VARCHAR(45),
+    request_method VARCHAR(10),
+    request_path VARCHAR(255),
+    status_code INT,
+    details TEXT,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_audit_timestamp ON audit_logs(timestamp);
+CREATE INDEX IF NOT EXISTS idx_audit_username ON audit_logs(username);
+CREATE INDEX IF NOT EXISTS idx_audit_action ON audit_logs(action);
+CREATE INDEX IF NOT EXISTS idx_audit_outcome ON audit_logs(outcome);
+CREATE INDEX IF NOT EXISTS idx_audit_resource_type ON audit_logs(resource_type);
+

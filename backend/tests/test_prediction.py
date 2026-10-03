@@ -3,10 +3,23 @@
 import math
 from fastapi.testclient import TestClient
 import pytest
+from backend.app.core.dependencies import get_current_user
 from backend.app.main import app
+from backend.app.models.user import UserRecord
 from backend.app.services.prediction_service import PredictionService
 
 client = TestClient(app)
+
+
+@pytest.fixture(scope="module", autouse=True)
+def setup_auth_override():
+    """Inject authorized operator session for regression assertions."""
+    app.dependency_overrides[get_current_user] = lambda: UserRecord(
+        id=1, username="admin", role="ADMIN", is_active=True
+    )
+    yield
+    app.dependency_overrides.pop(get_current_user, None)
+
 
 SAMPLE_BENIGN_FLOW = {
     "Destination Port": 443,

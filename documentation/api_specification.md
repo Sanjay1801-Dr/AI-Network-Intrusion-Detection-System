@@ -22,15 +22,16 @@
 
 | Method | Endpoint | Status | Description |
 | :--- | :--- | :--- | :--- |
-| `GET` | `/api/health` | **Implemented (Phase 1/4)** | System health, service status, uptime & ML readiness |
-| `POST`| `/api/v1/predict` | **Implemented (Phase 4)** | Predict flow anomaly, classify threat family & compute risk triage |
+| `GET` | `/api/health` | **Implemented (Phase 1/4/5)** | System health, service status, uptime & component readiness |
+| `POST`| `/api/v1/predict` | **Implemented (Phase 4/5)** | AI prediction with atomic database & alert persistence |
+| `GET` | `/api/v1/predictions` | **Implemented (Phase 5)** | Query paginated historical prediction audits (newest first) |
+| `GET` | `/api/v1/alerts` | **Implemented (Phase 5)** | Query paginated security incident alerts with filters |
 | `POST` | `/api/v1/traffic/ingest` | Documented (Phase 2) | Ingest single or batch network traffic flow records |
 | `GET` | `/api/v1/traffic` | Documented (Phase 2) | Query traffic records with filtering & pagination |
 | `GET` | `/api/v1/traffic/{id}` | Documented (Phase 2) | Retrieve a single traffic record by ID |
 | `GET` | `/api/v1/threats` | Documented (Phase 3) | List detected threats with severity filters |
 | `GET` | `/api/v1/threats/{id}` | Documented (Phase 3) | Get detailed threat inspection and feature analysis |
 | `POST` | `/api/v1/threats/{id}/mitigate`| Documented (Phase 3) | Record mitigation status for an identified threat |
-| `GET` | `/api/v1/alerts` | Documented (Phase 3) | List security alerts for SOC triage |
 | `PATCH`| `/api/v1/alerts/{id}/status` | Documented (Phase 3) | Update alert status (`ACKNOWLEDGED`, `RESOLVED`) |
 | `GET` | `/api/v1/alerts/statistics` | Documented (Phase 3) | Aggregated alert metrics by severity & category |
 | `GET` | `/api/v1/metrics/overview` | Documented (Phase 4) | High-level SOC telemetry (events/sec, threat counts) |
@@ -118,7 +119,75 @@
 
 ---
 
-### 3.3 Network Traffic Ingestion (Phase 2)
+### 3.3 Prediction Audit History (Implemented in Phase 5)
+- **Endpoint:** `GET /api/v1/predictions`
+- **Auth:** None (Phase 5)
+- **Description:** Returns paginated historical network flow predictions ordered newest first.
+- **Query Parameters:**
+  - `limit` (integer, default 20, min 1, max 100): Page size limit.
+  - `offset` (integer, default 0, min 0): Number of records to skip.
+- **Response (200 OK):**
+  ```json
+  {
+    "total": 1,
+    "limit": 20,
+    "offset": 0,
+    "items": [
+      {
+        "id": 1,
+        "timestamp": "2026-10-03T12:00:00Z",
+        "predicted_threat": "Port Scan",
+        "intrusion_flag": true,
+        "anomaly_score": 0.82,
+        "classification_confidence": 0.91,
+        "risk_level": "HIGH",
+        "recommended_action": "SOC Incident Queue Escalation",
+        "destination_port": 22,
+        "protocol": "TCP",
+        "created_at": "2026-10-03T12:00:00Z"
+      }
+    ]
+  }
+  ```
+
+---
+
+### 3.4 Security Alerts Retrieval (Implemented in Phase 5)
+- **Endpoint:** `GET /api/v1/alerts`
+- **Auth:** None (Phase 5)
+- **Description:** Returns paginated security alerts queued for SOC triage with optional severity and status filtering.
+- **Query Parameters:**
+  - `limit` (integer, default 20, min 1, max 100): Page size limit.
+  - `offset` (integer, default 0, min 0): Number of records to skip.
+  - `severity` (string, optional): Filter by `LOW`, `MEDIUM`, `HIGH`, `CRITICAL`.
+  - `status` (string, optional): Filter by `NEW`, `ACKNOWLEDGED`, `RESOLVED`, `FALSE_POSITIVE`.
+- **Response (200 OK):**
+  ```json
+  {
+    "total": 1,
+    "limit": 20,
+    "offset": 0,
+    "items": [
+      {
+        "id": 1,
+        "prediction_id": 25,
+        "timestamp": "2026-10-03T12:00:00Z",
+        "alert_type": "NETWORK_INTRUSION",
+        "severity": "HIGH",
+        "threat_label": "Port Scan",
+        "anomaly_score": 0.82,
+        "confidence": 0.91,
+        "status": "NEW",
+        "recommended_action": "SOC Incident Queue Escalation",
+        "created_at": "2026-10-03T12:00:00Z"
+      }
+    ]
+  }
+  ```
+
+---
+
+### 3.5 Network Traffic Ingestion (Phase 2)
 - **Endpoint:** `POST /api/v1/traffic/ingest`
 - **Request Body (Batch):**
   ```json

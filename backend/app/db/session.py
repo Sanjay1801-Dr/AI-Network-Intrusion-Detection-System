@@ -6,16 +6,24 @@ from sqlalchemy.orm import declarative_base, sessionmaker, Session
 from backend.app.core.config import settings
 
 # Construct engine based on configured database dialect
-connect_args = {}
+engine_kwargs = {
+    "echo": settings.DB_ECHO_SQL,
+    "future": True,
+}
+
 if settings.DATABASE_URL.startswith("sqlite"):
     # SQLite requires check_same_thread=False for multi-threaded FastAPI workers
-    connect_args["check_same_thread"] = False
+    engine_kwargs["connect_args"] = {"check_same_thread": False}
+else:
+    # Production PostgreSQL connection pooling & health verification
+    engine_kwargs["pool_size"] = settings.DB_POOL_SIZE
+    engine_kwargs["max_overflow"] = settings.DB_MAX_OVERFLOW
+    engine_kwargs["pool_pre_ping"] = True
+    engine_kwargs["pool_recycle"] = 3600
 
 engine = create_engine(
     settings.DATABASE_URL,
-    echo=settings.DB_ECHO_SQL,
-    connect_args=connect_args,
-    future=True,
+    **engine_kwargs,
 )
 
 SessionLocal = sessionmaker(
@@ -38,9 +46,11 @@ def get_db() -> Generator[Session, None, None]:
 
 
 def check_db_connection() -> bool:
-    """Check connectivity to database engine."""
+    """Check connectivity to database engine by executing a minimal query."""
+    from sqlalchemy import text
     try:
         with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
             return True
     except Exception:
         return False

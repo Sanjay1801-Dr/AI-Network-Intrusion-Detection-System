@@ -50,10 +50,17 @@ postgres-data/
 
 # Environment Variables & Secrets
 .env
+.env.*
+*.env
 .env.local
 .env.production
+frontend/.env
+frontend/.env.*
 *.pem
 *.key
+
+# Scratch & Temporary Testing Scripts
+scratch/
 
 # Operating System & IDEs
 .DS_Store
